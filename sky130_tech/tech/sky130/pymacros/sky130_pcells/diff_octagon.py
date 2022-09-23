@@ -1,19 +1,5 @@
 ########################################################################################################################
-# Copyright 2022 Mabrains Company LLC
-#
-# Licensed under the LGPL v2.1 License (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-##
-########################################################################################################################
+## Mabrains Company LLC
 ##
 ## Mabrains differential_octagon_Inductor Generator for Skywaters 130nm
 ########################################################################################################################
@@ -45,6 +31,9 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
         self.param("S", self.TypeDouble, "Spacing between conductors", default=3)
         self.param("distance_input", self.TypeDouble, "Distance of input conductors", default=30)
         self.param("spacing_input", self.TypeDouble, "Spacing of input inductors conductors", default=8)
+        self.param("pin_height", self.TypeDouble, "Pinheight(um)", default=5)
+        self.param("pin_layer", self.TypeInt, "PinLayer ", default=5)
+
 
 
         self.param("Louter", self.TypeDouble, "outer dimension", default=200)
@@ -267,7 +256,7 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
         x_check = 0
         Shielding_with_diffusion = diffusion
         all_hole_points = []
-        print(N_Conductors)
+        #print(N_Conductors)
         Diffusion_Width = 0.15 * PERCISION
         Diffusion_Spacing = 0.27 * PERCISION
         Diffusion_Encloses_Licon = 0.06 * PERCISION
@@ -459,7 +448,7 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
 
             N_Licon_ver = int(((Lver/2 - S / 2) - 2 * Li_Encloses_Licon_Two_Sides + Licon_Spacing) / (
                     Licon_Width_Length + Licon_Spacing))
-            print(N_Licon_ver)
+            #print(N_Licon_ver)
             Remaining_Licon_ver = (
                                           Lver/2 - S / 2) - 2 * Li_Encloses_Licon_Two_Sides - N_Licon_ver * Licon_Width_Length - (
                                           N_Licon_ver - 1) * Licon_Spacing
@@ -644,7 +633,7 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
             if j == N_of_half_Conductors - 2:
                 x_check = xcor2 + (j + 1) * (W + S) * Slope + W
         y_check2=y_check-Lver/2-input_distance
-        print(y_check2,"y_check2")
+        #print(y_check2,"y_check2")
         if (-y_check2 * 2) >= (2 * S + 0.14):
             self.cell.shapes(met1).insert(pya.Box(xcor2, y_check + S, x_check, y_check-y_check2*2 - S))
             self.cell.shapes(met1).insert(pya.Box(xcor2 + Lhor, y_check + S, -x_check, y_check-y_check2*2 - S))
@@ -867,7 +856,7 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
         Louter = self.Louter * PERCISION  # outer dimension
         angle = math.pi / 4  # outer angle of the side is 60 degrees (written here in radian)
         X_angle = math.cos(angle)
-        print(X_angle)
+        #print(X_angle)
         Y_angle = math.sin(angle)
         Z_angle = math.tan(math.pi * 3 / 8)
         Side_length = Louter / (1 + 2 * X_angle)
@@ -911,9 +900,9 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
                         ycor = ycor + Side_lengthCor * X_angle
                         diagonal = 1
                 xcor = self.roundto5(xcor)
-                print(ycor)
-                ycor = self.roundto5(ycor)
-                print(ycor)
+                #print(ycor)
+                #ycor = self.roundto5(ycor)
+                #print(ycor)
                 PointCoordinatesPos = pya.Point(xcor, ycor)
                 all_points_pos.append(PointCoordinatesPos)
                 PointCoordinatesNeg = pya.Point(-xcor, ycor)
@@ -992,9 +981,21 @@ class diff_octagon_ind_Generator(pya.PCellDeclarationHelper):
 
         self.cell.shapes(met5).insert(pya.Box(Spacing_input / 2, ycor, -Spacing_input / 2, ycor - W))
 
-        self.cell.shapes(met5).insert(pya.Box(Spacing_input / 2, 0, Spacing_input / 2 + W, Dist_input))
-        self.cell.shapes(met5).insert(pya.Box(-Spacing_input / 2, 0, -Spacing_input / 2 - W, Dist_input))
+        n = self.cell.shapes(met5).insert(pya.Box(Spacing_input / 2, 0, Spacing_input / 2 + W, Dist_input))
+        p = self.cell.shapes(met5).insert(pya.Box(-Spacing_input / 2, 0, -Spacing_input / 2 - W, Dist_input))
 
+        # Adding ports on P and N level
+        pin_height = self.pin_height * PERCISION
+        pin_layer = self.pin_layer
+        met5lab = self.layout.layer(pin_layer, 5)
+
+        #nl = self.cell.shapes(met5lab).insert(pya.Box(Spacing_input / 2, 0, Spacing_input / 2 + W, pin_height))
+        #pl = self.cell.shapes(met5lab).insert(pya.Box(-Spacing_input / 2, 0, -Spacing_input / 2 - W, pin_height))
+        ptp =pya.Box(Spacing_input / 2, 0, Spacing_input / 2 + W, pin_height).center()
+        ptn =pya.Box(-Spacing_input / 2, 0, -Spacing_input / 2 - W, pin_height).center()
+        #(x,y) = pya.Box(Spacing_input / 2, 0, Spacing_input / 2 + W, pin_height).center()
+        self.cell.shapes(met5lab).insert(pya.Text('Outn', pya.Trans(pya.Trans.R0, ptp)))
+        self.cell.shapes(met5lab).insert(pya.Text('Outp', pya.Trans(pya.Trans.R0, ptn)))
 
 
 
