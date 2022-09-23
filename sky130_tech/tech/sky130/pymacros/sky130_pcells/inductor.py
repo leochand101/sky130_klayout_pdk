@@ -1,22 +1,10 @@
 ########################################################################################################################
-# Copyright 2022 Mabrains Company LLC
-#
-# Licensed under the LGPL v2.1 License (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-##
-########################################################################################################################
+## Mabrains Company LLC
 ##
 ## Mabrains Inductor Generator for Skywaters 130nm
 ########################################################################################################################
+import pdb
+
 from .layers_definiations import *
 import pya
 import math
@@ -44,6 +32,9 @@ class IndGenerator(pya.PCellDeclarationHelper):
         self.param("W", self.TypeDouble, "Width of the conductors", default=2)
         self.param("S", self.TypeDouble, "Spacing between conductors", default=4)
         self.param("Louter", self.TypeDouble, "outer dimension", default=40)
+        self.param("pin_height", self.TypeDouble, "Pinheight(um))", default=5)
+        self.param("pin_layer", self.TypeInt, "PinLayer and inferred pinLayer-1 since ind P and N are on twp layers \
+                                              ", default=5)
 
         shielding_option = self.param("shielding", self.TypeString, "Shielding Type", default=200)
         shielding_option.add_choice("No shielding", 0)
@@ -794,6 +785,16 @@ class IndGenerator(pya.PCellDeclarationHelper):
         self.cell.shapes(via4).insert(pya.Box(xcor - W / 2, ycor, xcor + W, ycor + W))
         self.cell.shapes(met4).insert(pya.Box(xcor - W / 2, ycor, xcor + Louter - (N - 1) * W - (N - 1) * S, ycor + W))
 
+        # Pin Definitions
+        pin_height = self.pin_height * PERCISION
+        pin_layer = self.pin_layer
+        met5lab = self.layout.layer(pin_layer, 5)
+        met4lab = self.layout.layer(pin_layer-1, 5)
+
+        start_pin = pya.Point(pin_height, 0)
+        end_pin = pya.Point((xcor+Louter-(N-1)*W-(N-1)*S)-pin_height, ycor + W -W/2)
+        self.cell.shapes(met4lab).insert(pya.Text('Outp', pya.Trans(pya.Trans.R0, start_pin)))
+        self.cell.shapes(met5lab).insert(pya.Text('Outn', pya.Trans(pya.Trans.R0, end_pin)))
         # variables for inductor value calculation
         # https://coil32.net/pcb-coil.html
         uo = 4 * math.pi * 1e-7
